@@ -84,7 +84,10 @@ def demo_rag_chain(retriever, llm):
     prompt = ChatPromptTemplate.from_template(template)
 
     def format_docs(docs):
-       return "\n\n".join(doc.page_content for doc in docs)     
+       return "\n\n".join(doc.page_content for doc in docs)    
+    
+    # [{ page_content: dadjakdkjhasda }, { page_content: dadjakdkjhasda }] 
+    # dadjakdkjhasda dadjakdkjhasda
 
     rag_chain = (
         { "context": retriever | format_docs, "question": RunnablePassthrough() }
