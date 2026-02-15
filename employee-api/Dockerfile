@@ -7,6 +7,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-EXPOSE 8000
+RUN python init_db.py
 
-CMD ["python", "server.py"]
+EXPOSE 8001
+
+CMD ["python", "main.py"]

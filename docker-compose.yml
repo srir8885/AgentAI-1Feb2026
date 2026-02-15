@@ -1,15 +1,31 @@
 services:
 
+  employee-api:
+    build: ./employee-api
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/employees')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
   employee-mcp:
     build: ./employee-mcp
     ports:
       - "8000:8000"
+    environment:
+      - EMPLOYEE_API_URL=http://employee-api:8001
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/mcp')"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 5s
+    depends_on:
+      employee-api:
+        condition: service_healthy
 
   hr-agent:
     build: ./hr-agent
