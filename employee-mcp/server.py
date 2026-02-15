@@ -3,7 +3,10 @@ import sqlite3
 from contextlib import contextmanager
 from typing import Optional
 
+import uvicorn
 from fastmcp import FastMCP
+from starlette.middleware import Middleware
+from starlette.middleware.cors import CORSMiddleware
 
 from init_db import DB_PATH, init_db
 
@@ -240,5 +243,6 @@ def execute_query(sql: str, params: list | None = None) -> dict:
 
 # ── Entry point ────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    # Runs as an HTTP server on http://localhost:8000/mcp
-    mcp.run(transport="http", host="0.0.0.0", port=8000)
+    cors = Middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+    app = mcp.http_app(middleware=[cors], stateless_http=True)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
