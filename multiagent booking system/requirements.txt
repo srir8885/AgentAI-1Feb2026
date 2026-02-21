@@ -7,3 +7,6 @@ pydantic
 httpx
 asyncio
 typing-extensions
+# MCP — Model Context Protocol (for flight database tool)
+mcp
+fastmcp
