@@ -5,6 +5,8 @@ services:
       - "8000:8000"
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PINECONE_API_KEY=${PINECONE_API_KEY}
+      - PINECONE_INDEX_NAME=${PINECONE_INDEX_NAME:-travel-knowledge}
       - DEBUG=${DEBUG:-False}
       - PORT=8000
     env_file:
@@ -21,6 +23,19 @@ services:
     networks:
       - travel-agent-network
 
+  seed-pinecone:
+    build: .
+    command: python scripts/seed_pinecone.py
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PINECONE_API_KEY=${PINECONE_API_KEY}
+      - PINECONE_INDEX_NAME=${PINECONE_INDEX_NAME:-travel-knowledge}
+    env_file:
+      - .env
+    profiles:
+      - seed
+    networks:
+      - travel-agent-network
 networks:
   travel-agent-network:
     driver: bridge
