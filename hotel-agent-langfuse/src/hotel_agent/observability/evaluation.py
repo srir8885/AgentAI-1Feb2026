@@ -8,9 +8,19 @@ from typing import Any
 
 from langchain_openai import ChatOpenAI
 
+from langfuse.api.client import FernLangfuse
+
 from hotel_agent.config import settings
 from hotel_agent.models.schemas import EvaluationScore
-from hotel_agent.observability.tracing import get_langfuse, score_trace
+from hotel_agent.observability.tracing import score_trace
+
+
+def _get_langfuse_api() -> FernLangfuse:
+    return FernLangfuse(
+        base_url=settings.langfuse_host,
+        username=settings.langfuse_public_key,
+        password=settings.langfuse_secret_key,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -106,18 +116,36 @@ async def evaluate_response(
 
 async def batch_evaluate(trace_ids: list[str]) -> list[dict[str, Any]]:
     """Fetch traces from Langfuse and evaluate each one. Returns summary."""
-    lf = get_langfuse()
+    lf_api = _get_langfuse_api()
     results = []
 
     for tid in trace_ids:
         try:
-            trace = lf.get_trace(tid)
-            if not trace.input or not trace.output:
+            obs_page = lf_api.observations.get_many(trace_id=tid)
+            obs_list = obs_page.data or []
+
+            # Router span holds the raw user query as input
+            router_obs = next((o for o in obs_list if o.name == "router" and o.input), None)
+            # Specialist agent span output is a dict with a "response" key
+            specialist_obs = next(
+                (o for o in obs_list if o.name and o.name.startswith("specialist_") and o.output),
+                None,
+            )
+
+            if not router_obs or not specialist_obs:
                 continue
 
+            query = str(router_obs.input)
+            # Output is a dict like {'response': '...'}; extract the text
+            raw_output = specialist_obs.output
+            if isinstance(raw_output, dict):
+                response = str(raw_output.get("response", raw_output))
+            else:
+                response = str(raw_output)
+
             score = await evaluate_response(
-                query=str(trace.input),
-                response=str(trace.output),
+                query=query,
+                response=response,
                 trace_id=tid,
             )
             results.append({

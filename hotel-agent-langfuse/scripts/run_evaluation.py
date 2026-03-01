@@ -9,17 +9,24 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from dotenv import load_dotenv
 load_dotenv()
 
+from langfuse.api.client import FernLangfuse
+
 from hotel_agent.observability.evaluation import batch_evaluate
-from hotel_agent.observability.tracing import get_langfuse, flush
+from hotel_agent.observability.tracing import flush
+from hotel_agent.config import settings
 
 
 async def main():
     print("Fetching recent traces from Langfuse...")
 
-    lf = get_langfuse()
+    lf_api = FernLangfuse(
+        base_url=settings.langfuse_host,
+        username=settings.langfuse_public_key,
+        password=settings.langfuse_secret_key,
+    )
 
     try:
-        traces = lf.get_traces(limit=10)
+        traces = lf_api.trace.list(limit=10)
     except Exception as exc:
         print(f"Error fetching traces: {exc}")
         print("Make sure Langfuse is configured and has traces from /chat requests.")
